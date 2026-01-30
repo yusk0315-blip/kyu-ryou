@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>給料日あと何回？ × 子ども残り回数（時給換算）</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0b1220;color:#e5e7eb;margin:0;padding:18px}
+  .wrap{max-width:680px;margin:auto;background:#0f172a;border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  h1{margin:6px 0 14px;text-align:center;font-size:18px;line-height:1.4}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:600px){.grid{grid-template-columns:1fr}}
+  label{display:block;margin-top:10px;font-size:12px;opacity:.9}
+  input,select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0b1220;color:#e5e7eb;font-size:16px}
+  button{width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:#38bdf8;color:#001018;font-weight:900;font-size:16px}
+  .card{margin-top:14px;padding:14px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
+  .big{font-size:32px;font-weight:900;line-height:1.15;margin:6px 0}
+  .mid{font-size:18px;font-weight:800;margin:4px 0}
+  .muted{opacity:.8;font-size:12px;line-height:1.6}
+  .row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .pill{padding:6px 10px;border-radius:999px;background:rgba(56,189,248,.18);border:1px solid rgba(56,189,248,.35);font-size:12px}
+  .hr{height:1px;background:rgba(255,255,255,.10);margin:12px 0}
+  .punch{margin-top:10px;font-weight:900;font-size:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>給料日あと何回？<br>× 子どもと過ごせる残り回数（時給換算）</h1>
+
+  <div class="grid">
+    <div>
+      <label>あなたの年齢</label>
+      <input type="number" id="myAge" placeholder="例：32">
+    </div>
+    <div>
+      <label>定年年齢</label>
+      <input type="number" id="retireAge" placeholder="例：65">
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>子どもの年齢</label>
+      <input type="number" id="kidAge" placeholder="例：3">
+    </div>
+    <div>
+      <label>「いつまで」やる？（目安）</label>
+      <select id="until">
+        <option value="6">6歳まで（小学校前）</option>
+        <option value="9">9歳まで（低学年）</option>
+        <option value="12" selected>12歳まで（小学校卒業前後）</option>
+        <option value="15">15歳まで（中学卒業）</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <label>あなたの時給（円）</label>
+      <input type="number" id="hourly" placeholder="例：2500（ざっくりでOK）">
+    </div>
+    <div>
+      <label>抱っこ1回は何分？</label>
+      <select id="hugMin">
+        <option value="5">5分</option>
+        <option value="10" selected>10分</option>
+        <option value="15">15分</option>
+        <option value="20">20分</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div class="mid">週に何回？（あなた基準でOK）</div>
+      <div class="pill">ざっくりで刺さる</div>
+    </div>
+
+    <label>抱っこ（週◯回）</label>
+    <input type="number" id="hug" placeholder="例：5">
+
+    <label>手をつなぐ（週◯回）</label>
+    <input type="number" id="hand" placeholder="例：7">
+
+    <label>一緒に寝る（週◯回）</label>
+    <input type="number" id="sleep" placeholder="例：6">
+
+    <label>一緒に遊ぶ（週◯回）</label>
+    <input type="number" id="play" placeholder="例：5">
+
+    <label>出かける（週◯回）</label>
+    <input type="number" id="out" placeholder="例：2">
+
+    <div class="muted" style="margin-top:10px;">
+      ※ 週回数は0でもOK。<br>
+      ※ 「いつまで」は“その関わりが減り始める年齢”の目安。
+    </div>
+  </div>
+
+  <button onclick="calc()">計算する</button>
+
+  <div id="outArea"></div>
+</div>
+
+<script>
+function fmtInt(n){
+  if(!isFinite(n)) return "-";
+  return Math.max(0, Math.floor(n)).toLocaleString('ja-JP');
+}
+function fmtMoney(n){
+  if(!isFinite(n)) return "-";
+  return Math.max(0, Math.round(n)).toLocaleString('ja-JP');
+}
+function val(id){ return Number(document.getElementById(id).value || 0); }
+
+function calc(){
+  const myAge = val("myAge");
+  const retireAge = val("retireAge");
+  const kidAge = val("kidAge");
+  const until = Number(document.getElementById("until").value);
+
+  const hourly = val("hourly");
+  const hugMin = Number(document.getElementById("hugMin").value);
+
+  if(!myAge || !retireAge || retireAge <= myAge){
+    alert("あなたの年齢・定年年齢を正しく入力してね");
+    return;
+  }
+  if(kidAge < 0 || until <= kidAge){
+    alert("子どもの年齢と「いつまで」を正しく選んでね（いつまで > 子ども年齢）");
+    return;
+  }
+
+  // 給料日=月1回 として残り回数
+  const paydaysLeft = (retireAge - myAge) * 12;
+
+  // 子どもイベント残り週数
+  const yearsLeftKid = until - kidAge;
+  const weeksLeft = yearsLeftKid * 52;
+
+  const items = [
+    {name:"抱っこ", perWeek: val("hug")},
+    {name:"手をつなぐ", perWeek: val("hand")},
+    {name:"一緒に寝る", perWeek: val("sleep")},
+    {name:"一緒に遊ぶ", perWeek: val("play")},
+    {name:"出かける", perWeek: val("out")}
+  ];
+
+  const results = items.map(x => ({
+    name: x.name,
+    count: weeksLeft * x.perWeek
+  })).sort((a,b)=>b.count-a.count);
+
+  const totalEvents = results.reduce((s,r)=>s+r.count,0);
+  const perPayday = totalEvents / paydaysLeft;
+
+  // 抱っこを時給換算
+  const hugCount = results.find(r=>r.name==="抱っこ")?.count || 0;
+  const hugHours = (hugCount * hugMin) / 60;              // 合計時間（h）
+  const hugValue = hourly > 0 ? hugHours * hourly : null; // 円換算（任意）
+
+  const top = results[0];
+
+  const htmlRows = results.map(r => `
+    <div class="row" style="margin:8px 0;">
+      <div>${r.name}</div>
+      <div class="pill">${fmtInt(r.count)} 回</div>
+    </div>
+  `).join("");
+
+  const hugBlock = `
+    <div class="hr"></div>
+    <div class="mid">抱っこを「時間」に直すと</div>
+    <div class="muted">抱っこ1回=${hugMin}分として</div>
+    <div class="big">${(hugHours || 0).toFixed(1)} 時間</div>
+    <div class="muted">${hourly > 0 ? `時給${fmtMoney(hourly)}円換算で` : `（時給を入れると円換算も出る）`}</div>
+    <div class="big">${hourly > 0 ? `${fmtMoney(hugValue)} 円` : `-`}</div>
+  `;
+
+  document.getElementById("outArea").innerHTML = `
+    <div class="card">
+      <div class="muted">あなたが迎える残りの給料日</div>
+      <div class="big">${fmtInt(paydaysLeft)} 回</div>
+
+      <div class="hr"></div>
+
+      <div class="muted">子どもが${until}歳になるまでの残り</div>
+      <div class="big">${fmtInt(weeksLeft)} 週</div>
+
+      <div class="hr"></div>
+
+      <div class="mid">残り回数（ざっくり）</div>
+      ${htmlRows}
+
+      <div class="hr"></div>
+
+      <div class="muted">合計（全部あわせて）</div>
+      <div class="big">${fmtInt(totalEvents)} 回</div>
+
+      <div class="muted">残り給料日で割ると</div>
+      <div class="big">給料日1回 = 約${(perPayday || 0).toFixed(1)}回</div>
+
+      ${hugBlock}
+
+      <div class="punch">一番減るのが早いのは「${top.name}」。</div>
+
+      <!-- ③の一撃 -->
+      <div class="punch">「今忙しい」は、未来の言い訳になる。</div>
+      <div class="muted">※ざっくり計算（昇給/物価/家庭事情は無視）。でも“感覚”はズレない。</div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
